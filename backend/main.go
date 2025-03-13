@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-// Initialize in-memory storage and service as global variables
-
 type Message struct {
 	ID   int    `json:"id"`
 	User string `json:"user"`
 	Text string `json:"text"`
 }
+
+// Initialize in-memory storage and service as global variables
 
 var (
 	messages []Message
