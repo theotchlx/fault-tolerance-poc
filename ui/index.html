@@ -49,11 +49,22 @@
         .skeleton-text { height: 16px; width: 80%; }
         .skeleton-title { height: 20px; width: 50%; }
         .skeleton-small { height: 12px; width: 60%; }
+        .excuse {
+            text-align: center;
+            color: gray;
+            font-size: 60px;
+            font-weight: bolder;
+            padding-bottom: 10px;
+        }
         .error {
+            padding-top: 10px;
             text-align: center;
             color: red;
-            font-size: 18px;
+            font-size: 30px;
             font-weight: bold;
+        }
+        .failure {
+            padding: 300px 0;
         }
     </style>
 </head>
@@ -63,7 +74,10 @@
     <h2>Messages</h2>
 
     {{if .Error}}
+    <div class="failure">
+        <div class="excuse">Sorry!</div>
         <div class="error">Failed to retrieve messages.</div>
+    </div>
     {{else if .Messages}}
         {{range .Messages}}
             <div class="message">
