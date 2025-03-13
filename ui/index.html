@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f4f4f4;
+        }
+        .container {
+            width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .message {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .skeleton {
+            background: #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .skeleton-text { height: 16px; width: 80%; }
+        .skeleton-title { height: 20px; width: 50%; }
+        .skeleton-small { height: 12px; width: 60%; }
+        .error {
+            text-align: center;
+            color: red;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Messages</h2>
+
+    {{if .Error}}
+        <div class="error">Failed to retrieve messages.</div>
+    {{else if .Messages}}
+        {{range .Messages}}
+            <div class="message"><strong>{{.User}}</strong>: {{.Text}}</div>
+        {{end}}
+    {{else}}
+        <!-- Show skeleton loaders before fetching -->
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-small"></div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-small"></div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-title"></div>
+        <div class="skeleton skeleton-small"></div>
+        <div class="skeleton skeleton-text"></div>
+    {{end}}
+</div>
+
+</body>
+</html>
