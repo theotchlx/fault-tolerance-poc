@@ -7,21 +7,31 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            font-size: larger;
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 150vh;
             background: #f4f4f4;
         }
+        strong {
+            font-size: 1.1em;
+        }
+        .pfp {
+            border-radius: 30%;
+        }
         .container {
-            width: 400px;
+            width: 1000px;
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
         .message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
@@ -56,7 +66,10 @@
         <div class="error">Failed to retrieve messages.</div>
     {{else if .Messages}}
         {{range .Messages}}
-            <div class="message"><strong>{{.User}}</strong>: {{.Text}}</div>
+            <div class="message">
+                <img class="pfp" src='pictures/{{if eq .User "Teal"}}teal2.jpg{{else}}perpetua.jpg{{end}}' width="60" height="60">
+                <div><strong>{{.User}}</strong>:<br />&nbsp&nbsp{{.Text}}</div>
+            </div>
         {{end}}
     {{else}}
         <!-- Show skeleton loaders before fetching -->

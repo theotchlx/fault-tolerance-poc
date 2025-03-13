@@ -54,6 +54,10 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Register the file server handler for /pictures/
+	http.Handle("/pictures/", http.StripPrefix("/pictures/", http.FileServer(http.Dir("pictures/"))))
+
+	// Register the homePage handler for the root path
 	http.HandleFunc("/", homePage)
 
 	log.Println("Frontend running at http://localhost:8080")
