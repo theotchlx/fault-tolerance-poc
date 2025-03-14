@@ -35,20 +35,29 @@
             padding: 10px;
             border-bottom: 1px solid #ddd;
         }
-        .skeleton {
+        .skeleton-pfp, .skeleton-user, .skeleton-text {
             background: #ddd;
             border-radius: 4px;
-            margin-bottom: 10px;
+            margin: 10px 0;
             animation: pulse 1.5s infinite;
+        }
+        .skeleton-pfp {
+            width: 60px;
+            height: 60px;
+        }
+        .skeleton-user {
+            width: 140px;
+            height: 20px;
+        }
+        .skeleton-text {
+            width: 600px;
+            height: 20px;
         }
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
-        .skeleton-text { height: 16px; width: 80%; }
-        .skeleton-title { height: 20px; width: 50%; }
-        .skeleton-small { height: 12px; width: 60%; }
         .excuse {
             text-align: center;
             color: gray;
@@ -59,12 +68,17 @@
         .error {
             padding-top: 10px;
             text-align: center;
-            color: red;
+            color: slategray;
             font-size: 30px;
             font-weight: bold;
         }
         .failure {
             padding: 300px 0;
+        }
+        .failure img {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -73,32 +87,72 @@
 <div class="container">
     <h2>Messages</h2>
 
-    {{if .Error}}
-    <div class="failure">
-        <div class="excuse">Sorry!</div>
-        <div class="error">Failed to retrieve messages.</div>
-    </div>
-    {{else if .Messages}}
-        {{range .Messages}}
-            <div class="message">
-                <img class="pfp" src='pictures/{{if eq .User "Teal"}}teal2.jpg{{else}}perpetua.jpg{{end}}' width="60" height="60">
-                <div><strong>{{.User}}</strong>:<br />&nbsp&nbsp{{.Text}}</div>
+    <!-- Skeleton placeholders shown while fetching -->
+    <div id="message-list">
+        <div class="message">
+            <div class="skeleton-pfp"></div>
+            <div>
+                <div class="skeleton-user"></div>
+                <div class="skeleton-text"></div>
             </div>
-        {{end}}
-    {{else}}
-        <!-- Show skeleton loaders before fetching -->
-        <div class="skeleton skeleton-title"></div>
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-small"></div>
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-title"></div>
-        <div class="skeleton skeleton-small"></div>
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-title"></div>
-        <div class="skeleton skeleton-small"></div>
-        <div class="skeleton skeleton-text"></div>
-    {{end}}
+        </div>
+        <div class="message">
+            <div class="skeleton-pfp"></div>
+            <div>
+                <div class="skeleton-user"></div>
+                <div class="skeleton-text"></div>
+            </div>
+        </div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+        <div class="message"><div class="skeleton-pfp"></div><div><div class="skeleton-user"></div><div class="skeleton-text"></div></div></div>
+    </div>
+
 </div>
+
+<script>
+    // Fetch messages from backend API
+    async function fetchMessages() {
+        try {
+            let response = await fetch("/messages");
+            if (!response.ok) throw new Error("Failed to load messages.");
+            let messages = await response.json();
+
+            // Replace skeletons with actual messages
+            let messageList = document.getElementById("message-list");
+            messageList.innerHTML = ""; // Clear skeletons
+
+            messages.forEach(msg => {
+                let profilePic = msg.user === "Teal" ? "teal2.jpg" : "perpetua.jpg";
+                let messageDiv = `
+                    <div class="message">
+                        <img class="pfp" src="pictures/${profilePic}" width="60" height="60">
+                        <div><strong>${msg.user}</strong>:<br />&nbsp&nbsp${msg.text}</div>
+                    </div>
+                `;
+                messageList.innerHTML += messageDiv;
+            });
+        } catch (error) {
+            document.getElementById("message-list").innerHTML = `
+                <div class="failure">
+                    <img src="pictures/x.webp" width="100" height="100">
+                    <div class="excuse">Sorry!</div>
+                    <div class="error">Failed to retrieve messages.</div>
+                </div>
+            `;
+        }
+    }
+
+    // Load messages when page loads
+    window.onload = fetchMessages;
+</script>
 
 </body>
 </html>
