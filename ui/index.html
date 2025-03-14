@@ -141,27 +141,25 @@
 </div>
 
 <script>
-    let retryCount = 0; // Track retries (failed fetches)
-    let timerStart = 0;
-    let timerInterval;
+    let retryCount = 0;  // Track retries (failed fetches)
+    let autoRetry = false;
+    let retryDelay = 3;  // Default retry delay is 3 seconds
+    let autoRetryLimit = 5;  // 5 retries maximum.
 
     async function fetchMessages() {
-        // Reset timer everytime we try to fetch
-        clearInterval(timerInterval);
-        timerStart = Date.now();
-        timerInterval = setInterval(updateTimer, 1000); // Update timer every second
-
         try {
+            if (retryCount >= autoRetryLimit) { autoRetry = false; }  // Disable auto-retry after 5 retries
+
             let response = await fetch("/messages");
             if (!response.ok) throw new Error("Failed to load messages.");
             let messages = await response.json();
 
-            clearInterval(timerInterval);  // Stop timer on success
-            retryCount = 0;  // Reset retry count on success
+            // Reset retry count on success
+            retryCount = 0;
 
             // Replace skeletons with actual messages
             let messageList = document.getElementById("message-list");
-            messageList.innerHTML = ""; // Clear skeletons
+            messageList.innerHTML = "";  // Clear skeletons
 
             messages.forEach(msg => {
                 let profilePic = msg.user === "Teal" ? "teal2.jpg" : "perpetua.jpg";
@@ -183,17 +181,36 @@
                     <div class="admin-ui">
                         <center style="margin-bottom:10px">Admin UI</center>
                         <div>Retries: ${retryCount}</div>
-                        <div>Time since last try: <span id="retry-timer">0</span> s</div>
-                        <button onclick="fetchMessages()">Retry</button>
+                        ${autoRetry ? "" : '<button onclick="fetchMessages()">Retry</button>'}
+                        ${retryCount > autoRetryLimit ? "" : `
+                            <button onclick="toggleAutoRetry()">
+                                ${autoRetry ? "Disable Auto-Retry" : "Enable Auto-Retry"}
+                            </button>
+                            <label>Retry Delay: 
+                                <input type="number" id="retryDelayInput" value="${retryDelay}" min="1" onchange="updateRetryDelay(this)">
+                                sec
+                            </label>
+                        `}
                     </div>
                 </div>
             `;
+
+            // Rerun function after delay if enabled.
+            if (autoRetry) {
+                setTimeout(fetchMessages, retryDelay * 1000);
+            }
         }
     }
 
-    function updateTimer() {
-        let elapsed = Date.now() - timerStart;
-        document.getElementById("retry-timer").textContent = Math.floor(elapsed / 1000);
+    // Toggle auto-retry
+    function toggleAutoRetry() {
+        autoRetry = !autoRetry;
+        if (autoRetry) { fetchMessages(); }  // Start retrying if enabling auto-retry
+    }
+
+    // Change retry delay
+    function updateRetryDelay(input) {
+        retryDelay = Math.max(1, parseInt(input.value) || 3);  // Ensure delay is at least 1 second, or 3 if not defined/invalid user input.
     }
 
     // Load messages when page loads
