@@ -80,6 +80,29 @@
             margin-left: auto;
             margin-right: auto;
         }
+        .admin-ui {
+            border: 3px solid #ddd;
+            border-radius: 24px;
+            padding: 10px;
+            margin: 50px;
+            color: maroon;
+            font-size: 30px;
+            font-weight: bold;
+            padding-bottom: 10px;
+        }
+        .admin-ui button {
+            margin-top: 10px;
+            background: slategray;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        .admin-ui button:hover {
+            background: darkred;
+        }
     </style>
 </head>
 <body>
@@ -118,12 +141,23 @@
 </div>
 
 <script>
-    // Fetch messages from backend API
+    let retryCount = 0; // Track retries (failed fetches)
+    let timerStart = 0;
+    let timerInterval;
+
     async function fetchMessages() {
+        // Reset timer everytime we try to fetch
+        clearInterval(timerInterval);
+        timerStart = Date.now();
+        timerInterval = setInterval(updateTimer, 1000); // Update timer every second
+
         try {
             let response = await fetch("/messages");
             if (!response.ok) throw new Error("Failed to load messages.");
             let messages = await response.json();
+
+            clearInterval(timerInterval);  // Stop timer on success
+            retryCount = 0;  // Reset retry count on success
 
             // Replace skeletons with actual messages
             let messageList = document.getElementById("message-list");
@@ -140,14 +174,26 @@
                 messageList.innerHTML += messageDiv;
             });
         } catch (error) {
+            retryCount++;
             document.getElementById("message-list").innerHTML = `
                 <div class="failure">
                     <img src="pictures/x.webp" width="100" height="100">
                     <div class="excuse">Sorry!</div>
                     <div class="error">Failed to retrieve messages.</div>
+                    <div class="admin-ui">
+                        <center style="margin-bottom:10px">Admin UI</center>
+                        <div>Retries: ${retryCount}</div>
+                        <div>Time since last try: <span id="retry-timer">0</span> s</div>
+                        <button onclick="fetchMessages()">Retry</button>
+                    </div>
                 </div>
             `;
         }
+    }
+
+    function updateTimer() {
+        let elapsed = Date.now() - timerStart;
+        document.getElementById("retry-timer").textContent = Math.floor(elapsed / 1000);
     }
 
     // Load messages when page loads
