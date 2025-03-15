@@ -103,6 +103,15 @@
         .admin-ui button:hover {
             background: darkred;
         }
+        .admin-ui label {
+            margin-left: 10px;
+            font-size: 25px;
+        }
+        .admin-ui input {
+            width: 50px;
+            font-size: 25px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -144,7 +153,7 @@
     let retryCount = -1;  // Track retries (failed fetches)
     let autoRetry = false;
     let retryDelay = 3;  // Default retry delay is 3 seconds
-    let autoRetryLimit = 5;  // 5 retries maximum.
+    let autoRetryLimit = 5;  // 5 retries maximum by default.
     // For timeout tracking
     let timerInterval;
     let timeoutHandle;
@@ -160,7 +169,7 @@
         timeoutHandle = setTimeout(showFailure, 10000);
 
         try {
-            if (retryCount >= autoRetryLimit-1) { autoRetry = false; }  // Disable auto-retry after 5 retries
+            if (retryCount >= autoRetryLimit-1) { autoRetry = false; }  // Disable auto-retry after maximum retries
 
             let response = await fetch("/messages");
             if (!response.ok) throw new Error("Failed to load messages.");
@@ -194,7 +203,7 @@
     // Update timeout timer
     function updateTimer() {
         let elapsed = Date.now() - timerStart;
-        document.getElementById("retry-timer").textContent = elapsed;
+        document.getElementById("retry-timer").textContent = Math.floor(elapsed / 1000);
     }
 
     function showFailure() {
@@ -205,20 +214,23 @@
                 <div class="excuse">Sorry!</div>
                 <div class="error">Failed to retrieve messages.</div>
                 <div class="admin-ui">
-                    <center style="margin-bottom:10px">Admin UI</center>
+                    <center style="margin-bottom:10px">Admin panel</center>
                     <div>Retries: ${retryCount}</div>
-                    <div>Time: <span id="retry-timer">0</span> ms</div>
+                    <div>Time: <span id="retry-timer">0</span>s</div>
                     ${autoRetry ? "" : '<button onclick="fetchMessages()">Retry</button>'}
                     ${retryCount >= autoRetryLimit ? "" : `
                         <button onclick="toggleAutoRetry()">
                             ${autoRetry ? "Disable Auto-Retry" : "Enable Auto-Retry"}
                         </button>
-                        <label>Retry Delay: 
+                        <label>Retry delay: 
                             <input type="number" id="retryDelayInput" value="${retryDelay}" min="1" onchange="updateRetryDelay(this)">
                             sec
                         </label>
                     `}
-                    <div style="font-size:0.9em; color: darkslategray; margin-top: 20px;">Note: autoRetryLimit is set to ${autoRetryLimit}</div>
+                    <label>Retry limit: 
+                        <input type="number" id="retryDelayInput" value="${autoRetryLimit}" min="1" onchange="updateRetryLimit(this)">
+                        tries
+                    </label>
                 </div>
             </div>
         `;
@@ -238,6 +250,11 @@
     // Change retry delay
     function updateRetryDelay(input) {
         retryDelay = Math.max(1, parseInt(input.value) || 3);  // Ensure delay is at least 1 second, or 3 if not defined/invalid user input.
+    }
+
+    // Change retry limit
+    function updateRetryLimit(input) {
+        autoRetryLimit = Math.max(1, parseInt(input.value) || 5);  // Ensure delay is at least 1 second, or 3 if not defined/invalid user input.
     }
 
     // Load messages when page loads
