@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 // Message struct
@@ -31,7 +32,16 @@ func main() {
 
 	// Fetch messages endpoint for the JS to fetch from
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := http.Get("http://localhost:8081/messages")
+		args := os.Args
+		var endpoint string
+		if len(args) != 2 {
+			endpoint = ""
+		} else {
+			endpoint = args[1]
+		}
+
+		resp, err := http.Get("http://localhost:8081/messages" + endpoint)
+
 		if err != nil {
 			http.Error(w, "Failed to fetch messages", http.StatusInternalServerError)
 			return
@@ -39,7 +49,7 @@ func main() {
 		defer resp.Body.Close()
 
 		w.Header().Set("Content-Type", "application/json")
-		io.Copy(w, resp.Body) // Stream response
+		io.Copy(w, resp.Body) // Stream response, no buffer
 	})
 
 	log.Println("Frontend running at http://localhost:8080")
