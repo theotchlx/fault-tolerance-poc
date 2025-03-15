@@ -145,8 +145,20 @@
     let autoRetry = false;
     let retryDelay = 3;  // Default retry delay is 3 seconds
     let autoRetryLimit = 5;  // 5 retries maximum.
+    // For timeout tracking
+    let timerInterval;
+    let timeoutHandle;
 
     async function fetchMessages() {
+        clearInterval(timerInterval);
+        clearTimeout(timeoutHandle);
+        
+        timerStart = Date.now();
+        timerInterval = setInterval(updateTimer, 10);
+
+        // 10s timeout for this request.
+        timeoutHandle = setTimeout(showFailure, 10000);
+
         try {
             if (retryCount >= autoRetryLimit-1) { autoRetry = false; }  // Disable auto-retry after 5 retries
 
@@ -154,8 +166,11 @@
             if (!response.ok) throw new Error("Failed to load messages.");
             let messages = await response.json();
 
-            // Reset retry count on success
-            retryCount = -1;
+            // Fetch is successful, clear timeout
+            clearInterval(timerInterval);
+            clearTimeout(timeoutHandle);
+            
+            retryCount = -1;  // Reset retry count on success
 
             // Replace skeletons with actual messages
             let messageList = document.getElementById("message-list");
@@ -172,34 +187,45 @@
                 messageList.innerHTML += messageDiv;
             });
         } catch (error) {
-            retryCount++;
-            document.getElementById("message-list").innerHTML = `
-                <div class="failure">
-                    <img src="pictures/x.webp" width="100" height="100">
-                    <div class="excuse">Sorry!</div>
-                    <div class="error">Failed to retrieve messages.</div>
-                    <div class="admin-ui">
-                        <center style="margin-bottom:10px">Admin UI</center>
-                        <div>Retries: ${retryCount}</div>
-                        ${autoRetry ? "" : '<button onclick="fetchMessages()">Retry</button>'}
-                        ${retryCount >= autoRetryLimit ? "" : `
-                            <button onclick="toggleAutoRetry()">
-                                ${autoRetry ? "Disable Auto-Retry" : "Enable Auto-Retry"}
-                            </button>
-                            <label>Retry Delay: 
-                                <input type="number" id="retryDelayInput" value="${retryDelay}" min="1" onchange="updateRetryDelay(this)">
-                                sec
-                            </label>
-                        `}
-                        <div style="font-size:0.9em; color: darkslategray; margin-top: 20px;">Note: autoRetryLimit is set to ${autoRetryLimit}</div>
-                    </div>
-                </div>
-            `;
+            showFailure();
+        }
+    }
 
-            // Rerun function after delay if enabled.
-            if (autoRetry) {
-                setTimeout(fetchMessages, retryDelay * 1000);
-            }
+    // Update timeout timer
+    function updateTimer() {
+        let elapsed = Date.now() - timerStart;
+        document.getElementById("retry-timer").textContent = elapsed;
+    }
+
+    function showFailure() {
+        retryCount++;
+        document.getElementById("message-list").innerHTML = `
+            <div class="failure">
+                <img src="pictures/x.webp" width="100" height="100">
+                <div class="excuse">Sorry!</div>
+                <div class="error">Failed to retrieve messages.</div>
+                <div class="admin-ui">
+                    <center style="margin-bottom:10px">Admin UI</center>
+                    <div>Retries: ${retryCount}</div>
+                    <div>Time: <span id="retry-timer">0</span> ms</div>
+                    ${autoRetry ? "" : '<button onclick="fetchMessages()">Retry</button>'}
+                    ${retryCount >= autoRetryLimit ? "" : `
+                        <button onclick="toggleAutoRetry()">
+                            ${autoRetry ? "Disable Auto-Retry" : "Enable Auto-Retry"}
+                        </button>
+                        <label>Retry Delay: 
+                            <input type="number" id="retryDelayInput" value="${retryDelay}" min="1" onchange="updateRetryDelay(this)">
+                            sec
+                        </label>
+                    `}
+                    <div style="font-size:0.9em; color: darkslategray; margin-top: 20px;">Note: autoRetryLimit is set to ${autoRetryLimit}</div>
+                </div>
+            </div>
+        `;
+
+        // Rerun function after delay if enabled.
+        if (autoRetry) {
+            setTimeout(fetchMessages, retryDelay * 1000);
         }
     }
 
