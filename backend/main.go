@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"sync/atomic"
 	"time"
 )
 
@@ -15,13 +15,91 @@ type Message struct {
 	Text string `json:"text"`
 }
 
-// Initialize in-memory storage and service as global variables
+// Declare in-memory storage as global variable
 
 var (
 	messages []Message
 )
 
-func init() {
+// Service functions
+
+func getMessages(w http.ResponseWriter, r *http.Request) {
+	log.Println("-- getMessages called --")
+
+	time.Sleep(2 * time.Second) // Simulate processing delay
+
+	sendJSON(w, messages)
+}
+
+// Simulate failure: slow response / delay (5 seconds)
+func slowResponse(w http.ResponseWriter, r *http.Request) {
+	log.Println("slowResponse called")
+
+	time.Sleep(18 * time.Second) // Total 20 seconds.
+	getMessages(w, r)
+}
+
+// To test retry, timeout, fallback...
+
+// Always fails
+func alwaysFail(w http.ResponseWriter, r *http.Request) {
+	log.Println("alwaysFail called")
+
+	http.Error(w, "Service unavailable", http.StatusInternalServerError)
+}
+
+// To test fallback, circuit breaker...
+
+// Random failures (50% chance)
+func unreliableResponse(w http.ResponseWriter, r *http.Request) {
+	log.Println("unreliableResponse called")
+
+	if rand.Float32() < 0.5 {
+		http.Error(w, "Random failure", http.StatusInternalServerError)
+		return
+	}
+	getMessages(w, r)
+}
+
+// To test retry, circuit breaker...
+
+// First 2 requests fail, then succeed
+var flakyCounter int32
+
+func flakyResponse(w http.ResponseWriter, r *http.Request) {
+	log.Println("flakyResponse called")
+
+	if atomic.AddInt32(&flakyCounter, 1) <= 2 {
+		http.Error(w, "Temporary failure", http.StatusInternalServerError)
+		return
+	}
+	getMessages(w, r)
+}
+
+// Also to test retry, circuit breaker...
+
+// Returns a default fallback message when failing
+func fallbackResponse(w http.ResponseWriter, r *http.Request) {
+	log.Println("fallbackResponse called")
+
+	time.Sleep(1 * time.Second) // Simulate processing delay
+	sendJSON(w, []Message{
+		{ID: 0, User: "System", Text: "This is a fallback message that is detected and handled to create a seamless user experience."},
+	})
+}
+
+// To test fallback
+
+// Helper function to send JSON responses
+func sendJSON(w http.ResponseWriter, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
+}
+
+// Main function with routes
+
+func main() {
+
 	messages = []Message{
 		{ID: 1, User: "Teal", Text: "There is something inside me, and they don't know if there is a cure."},
 		{ID: 2, User: "Perpetua", Text: "A demonic possession, unlike any before."},
@@ -39,29 +117,18 @@ func init() {
 		{ID: 14, User: "Teal", Text: "Et non estis vestri"},
 		{ID: 15, User: "Perpetua", Text: "From the bottom of my heart I know, I'm satanized."},
 	}
-}
 
-// Handlers/controllers
-
-func getMessages(c echo.Context) error {
-	log.Println("getMessages called")
-	
-	time.Sleep(2 * time.Second);  // 
-	return c.JSON(http.StatusOK, messages)
-}
-
-// Main function with routes
-
-func main() {
-	e := echo.New()
-
-	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	rand.Seed(time.Now().UnixNano())
 
 	// Routes
-	e.GET("/messages", getMessages)
+	http.HandleFunc("/messages", getMessages) // Normal messages endpoint. No expected failures.
+	http.HandleFunc("/messages/slow", slowResponse)
+	http.HandleFunc("/messages/down", alwaysFail)
+	http.HandleFunc("/messages/unreliable", unreliableResponse)
+	http.HandleFunc("/messages/flaky", flakyResponse)
+	http.HandleFunc("/messages/fallback", fallbackResponse)
 
 	// Start server
-	e.Logger.Fatal(e.Start("0.0.0.0:8081"))
+	log.Println("Backend running on http://localhost:8081")
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }
