@@ -73,6 +73,9 @@ func flakyResponse(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Temporary failure", http.StatusInternalServerError)
 		return
 	}
+	if flakyCounter >= 2 {
+		flakyCounter = 0
+	}
 	getMessages(w, r)
 }
 
